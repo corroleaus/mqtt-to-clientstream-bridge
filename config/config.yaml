@@ -1,0 +1,10 @@
+server-to-client:
+  # websocket or sse
+  protocol: websocket
+mqtt-to-server:
+  broker:
+     host: "example.com"
+     port: 1883
+  topics:
+     - /test/+
+     - /test2/+
