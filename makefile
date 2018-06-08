@@ -2,7 +2,7 @@
 FLAGS=
 
 init:
-	python3 -m venv env
+	python3.6 -m venv env
 	echo "To enter env, run:"
 	echo "source env/bin/activate"
 

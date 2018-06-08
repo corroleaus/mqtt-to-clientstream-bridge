@@ -3,12 +3,13 @@ import re
 
 from setuptools import find_packages, setup
 
-install_requires = ['aiohttp',
+install_requires = ['tornado',
                     'paho-mqtt',
-                    'trafaret-config']
+                    'trafaret-config',
+                    'daiquiri']
 
 
-setup(name='aiohttpdemo-polls',
+setup(name='mqtt-to-clientstream-bridge',
       version='0.1',
       description='mqtt-to-clientstream-bridge',
       platforms=['POSIX'],
