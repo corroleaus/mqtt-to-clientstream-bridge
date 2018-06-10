@@ -3,6 +3,7 @@ from paho.mqtt.client import Client
 import daiquiri
 from exceptions import ConfigException
 from websocket_handler import WebsocketHandler
+from sse_handler import ServeSideEventsHandler
 logger = daiquiri.getLogger(__name__)
 
 
@@ -10,14 +11,18 @@ class Bridge(object):
     WEBSOCKETS = "websocket"
     SSE = "sse"
 
-    def __init__(self, args, ioloop):
+    def __init__(self, args, ioloop, dynamic_subscriptions):
         """ parse config values and setup Routes.
         """
         try:
             self.mqtt_host = args["mqtt-to-server"]["broker"]["host"]
             self.mqtt_port = args["mqtt-to-server"]["broker"]["port"]
             self.stream_protocol = args["server-to-client"]["protocol"]
+            logger.info(self.stream_protocol.lower())
+            if self.stream_protocol.lower() != "websocket" and self.stream_protocol.lower() != "sse":
+                raise ConfigException("Invalid protocol")
             self.mqtt_topics = args["mqtt-to-server"]["topics"]
+            self.dynamic_subscriptions = dynamic_subscriptions
         except KeyError as e:
             raise ConfigException("Error when accessing field", e) from e
         logger.info("connecting to mqtt")
@@ -29,7 +34,7 @@ class Bridge(object):
             host=self.mqtt_host, port=self.mqtt_port)
         self.mqtt_client.loop_start()
         self._app = web.Application([
-            (r'.*', WebsocketHandler, dict(parent=self)),
+            (r'.*', WebsocketHandler if self.stream_protocol == "websocket" else ServeSideEventsHandler, dict(parent=self)),
         ])
         self.topic_dict = {}
 
@@ -52,7 +57,16 @@ class Bridge(object):
     def socket_write_message(self, socket, message):
         socket.write_message(message)
 
-    def message_callback_add_with_sub_topic(self, sub_topic):
+    def append_dynamic(self, topic):
+        logger.info("adding dynamic subscription for %s " % topic)
+        self.message_callback_add_with_sub_topic(topic, dynamic=True)
+
+    def remove_dynamic(self, topic):
+        logger.info("removing dynamic subscription for %s " % topic)
+        self.topic_dict.pop(topic, None)
+        self.mqtt_client.unsubscribe(topic)
+
+    def message_callback_add_with_sub_topic(self, sub_topic, dynamic):
         logger.info("adding callback for mqtt topic: %s" % sub_topic)
 
         def message_callback(client, userdata, message):
@@ -72,7 +86,8 @@ class Bridge(object):
                             self.socket_write_message, socket=socket, message=message.payload)
 
         self.mqtt_client.message_callback_add(sub_topic, message_callback)
-        self.topic_dict[sub_topic] = {"matches": [], "sockets": []}
+        self.topic_dict[sub_topic] = {
+            "matches": [], "sockets": [], "dynamic": dynamic}
 
         self.mqtt_client.subscribe(sub_topic)
 
@@ -80,4 +95,4 @@ class Bridge(object):
         logger.info("mqtt connected to broker %s:%s" %
                     (self.mqtt_host, str(self.mqtt_port)))
         for topic in self.mqtt_topics:
-            self.message_callback_add_with_sub_topic(topic)
+            self.message_callback_add_with_sub_topic(topic, dynamic=False)

@@ -26,5 +26,6 @@ clean:
 	rm -rf build
 	rm -rf htmlcov
 	rm -rf dist
+	rm -rf *.egg-info
 
 .PHONY: init flake clean test
