@@ -4,6 +4,8 @@ import daiquiri
 from exceptions import ConfigException
 from websocket_handler import WebsocketHandler
 from sse_handler import ServeSideEventsHandler
+from threading import Thread
+import time
 logger = daiquiri.getLogger(__name__)
 
 
@@ -14,18 +16,22 @@ class Bridge(object):
     def __init__(self, args, ioloop, dynamic_subscriptions):
         """ parse config values and setup Routes.
         """
+        self.mqtt_topics = []
         try:
             self.mqtt_host = args["mqtt-to-server"]["broker"]["host"]
             self.mqtt_port = args["mqtt-to-server"]["broker"]["port"]
+            self.bridge_port = args["server-to-client"]["port"]
             self.stream_protocol = args["server-to-client"]["protocol"]
-            logger.info(self.stream_protocol.lower())
+            logger.info("Using protocol %s" % self.stream_protocol.lower())
             if self.stream_protocol.lower() != "websocket" and self.stream_protocol.lower() != "sse":
                 raise ConfigException("Invalid protocol")
-            self.mqtt_topics = args["mqtt-to-server"]["topics"]
             self.dynamic_subscriptions = dynamic_subscriptions
+            if not self.dynamic_subscriptions:
+                self.mqtt_topics = args["mqtt-to-server"]["topics"]
         except KeyError as e:
             raise ConfigException("Error when accessing field", e) from e
         logger.info("connecting to mqtt")
+        self.topic_dict = {}
         self.ioloop = ioloop
         self.mqtt_client = Client()
         self.mqtt_client.on_message = self.on_mqtt_message
@@ -34,14 +40,15 @@ class Bridge(object):
             host=self.mqtt_host, port=self.mqtt_port)
         self.mqtt_client.loop_start()
         self._app = web.Application([
-            (r'.*', WebsocketHandler if self.stream_protocol == "websocket" else ServeSideEventsHandler, dict(parent=self)),
+            (r'.*', WebsocketHandler if self.stream_protocol ==
+             "websocket" else ServeSideEventsHandler, dict(parent=self)),
         ])
-        self.topic_dict = {}
 
     def get_app(self):
         return self._app
-
-    def parse_req_path(self, req_path):
+    def get_port(self):
+        return self.bridge_port
+    async def parse_req_path(self, req_path):
         candidate_path = req_path
         if len(candidate_path) is 1 and candidate_path[0] is "/":
             return "#"
@@ -54,8 +61,8 @@ class Bridge(object):
     def on_mqtt_message(self, client, userdata, message):
         logger.debug("received message on topic %s" % message.topic)
 
-    def socket_write_message(self, socket, message):
-        socket.write_message(message)
+    async def socket_write_message(self, socket, message):
+        await socket.write_message(message)
 
     def append_dynamic(self, topic):
         logger.info("adding dynamic subscription for %s " % topic)
@@ -96,3 +103,8 @@ class Bridge(object):
                     (self.mqtt_host, str(self.mqtt_port)))
         for topic in self.mqtt_topics:
             self.message_callback_add_with_sub_topic(topic, dynamic=False)
+
+    async def mqtt_disconnect(self):
+        t = Thread(target=self.mqtt_client.disconnect, daemon=True)
+        t.start()
+        self.mqtt_client.loop_stop()

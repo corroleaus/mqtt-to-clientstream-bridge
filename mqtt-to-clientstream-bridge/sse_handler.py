@@ -14,10 +14,10 @@ class ServeSideEventsHandler(web.RequestHandler):
         self.set_header('Connection', 'keep-alive')
         self.connected_clients = []
 
-    def get(self):
+    async def get(self):
         logger.debug('sse request received on uri: %s',
                      self.request.uri)
-        req_topic = self.parent.parse_req_path(self.request.uri)
+        req_topic = await self.parent.parse_req_path(self.request.uri)
         logger.debug(
             "This connection will recive MQTT traffic on topic %s", req_topic)
         for topic in self.parent.topic_dict:
