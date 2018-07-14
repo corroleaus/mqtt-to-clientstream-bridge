@@ -6,6 +6,6 @@ mqtt-to-server:
   broker:
      host: "localhost"
      port: 1883
-  topics:
+  topics: # Optional
      - /test/+
      - /test2/+
