@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+
+    <h1>Getting server updates</h1>
+    <div id="result"></div>
+
+    <script>
+        if (typeof (EventSource) !== "undefined") {
+            var source = new EventSource("http://localhost:8080/#");
+            console.log("running code");
+            source.addEventListener('mqtt', function (e) {
+                console.log(e.data);
+                document.getElementById("result").innerHTML += e.data + "<br>";
+            }, false);
+            source.addEventListener('ping', function (e) {
+                console.log("received ping");
+            }, false);
+            source.addEventListener('open', function (e) {
+                console.log("connection opened");
+            }, false);
+
+            source.addEventListener('error', function (e) {
+                if (e.readyState == EventSource.CLOSED) {
+                    console.log("connection closed");
+                }
+            }, false);
+        } else {
+            document.getElementById("result").innerHTML = "Sorry, your browser does not support server-sent events...";
+        }
+    </script>
+
+</body>
+
+</html>
+
