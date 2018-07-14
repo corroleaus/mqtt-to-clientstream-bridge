@@ -58,6 +58,7 @@ class App(object):
         logger.info('Stopping ioloop.')
         self.ioloop.stop()
         self.ioloop.close()
+        self.bridge.get_app().stop()
         sys.exit(0)
 
     def sig_handler(self, sig, frame):
@@ -83,7 +84,7 @@ def main():
     parser.add_argument('-s', '--protocol', choices=["websocket", "sse"],
                         help='Protocol -- websocket or sse')
     parser.add_argument('-d', '--dynamic-subscriptions', action='store_true',
-                        help='If Dynamic subscriptions is set, the application will subscribe to topics dynamically based on http requests.')
+                        help='If Dynamic subscriptions is set, the application will subscribe to topics dynamically based on http requests. If a config file is used, the topics list may be omitted.')
     parser.add_argument('-l', '--log-level', required=False, choices=[
                         'CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'], help='Log Level')
     cli_args = parser.parse_args()
@@ -96,7 +97,7 @@ def main():
     elif not cli_args.config:
         if cli_args.dynamic_subscriptions:
             parser._print_message(
-                "Note: Subscriptions are always dynamic when configuration file is omitted.")
+                "Note: Subscriptions are always dynamic when configuration file is omitted.\n")
         else:
             cli_args.dynamic_subscriptions = True
         args = {"server-to-client": {"protocol": cli_args.protocol, "port": cli_args.bridge_port},

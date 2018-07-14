@@ -1,16 +1,20 @@
-from tornado import websocket
+from tornado import websocket, gen
 import daiquiri
 logger = daiquiri.getLogger(__name__)
 
 
 class WebsocketHandler(websocket.WebSocketHandler):
+    def check_origin(self, origin):
+        return True
+
     def initialize(self, parent):
         self.parent = parent
 
+    @gen.coroutine
     def open(self):
         logger.debug('Websocket connection starting on uri: %s',
                      self.request.uri)
-        req_topic = self.parent.parse_req_path(self.request.uri)
+        req_topic = yield self.parent.parse_req_path(self.request.uri)
         logger.debug(
             "This socket will recive MQTT traffic on topic %s", req_topic)
         for topic in self.parent.topic_dict:
@@ -33,5 +37,3 @@ class WebsocketHandler(websocket.WebSocketHandler):
                     topic_to_remove = topic
         if topic_to_remove:
             self.parent.remove_dynamic(topic_to_remove)
-            
-        

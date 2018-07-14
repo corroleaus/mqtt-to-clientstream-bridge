@@ -6,6 +6,7 @@ from websocket_handler import WebsocketHandler
 from sse_handler import ServeSideEventsHandler
 from threading import Thread
 import time
+import json
 logger = daiquiri.getLogger(__name__)
 
 
@@ -42,12 +43,14 @@ class Bridge(object):
         self._app = web.Application([
             (r'.*', WebsocketHandler if self.stream_protocol ==
              "websocket" else ServeSideEventsHandler, dict(parent=self)),
-        ])
+        ], debug=True)
 
     def get_app(self):
         return self._app
+
     def get_port(self):
         return self.bridge_port
+
     async def parse_req_path(self, req_path):
         candidate_path = req_path
         if len(candidate_path) is 1 and candidate_path[0] is "/":
@@ -62,7 +65,14 @@ class Bridge(object):
         logger.debug("received message on topic %s" % message.topic)
 
     async def socket_write_message(self, socket, message):
-        await socket.write_message(message)
+        try:
+            await socket.write_message(json.dumps(message))
+        except Exception as e:
+            logger.error(e)
+            try:
+                await socket.write_message(message)
+            except Exception as e:
+                logger.error(e)
 
     def append_dynamic(self, topic):
         logger.info("adding dynamic subscription for %s " % topic)
@@ -85,18 +95,21 @@ class Bridge(object):
             for topic in self.topic_dict:
                 if topic == message.topic:
                     for socket in self.topic_dict[topic]["sockets"]:
+                        logger.debug("sending to socket:")
+                        logger.debug(socket)
                         self.ioloop.add_callback(
-                            self.socket_write_message, socket=socket, message=message.payload)
+                            self.socket_write_message, socket=socket, message={"topic": message.topic, "payload": message.payload.decode('utf-8')})
                 elif message.topic in self.topic_dict[topic]["matches"]:
                     for socket in self.topic_dict[topic]["sockets"]:
+                        logger.debug("sending to socket:")
+                        logger.debug(socket)
                         self.ioloop.add_callback(
-                            self.socket_write_message, socket=socket, message=message.payload)
-
-        self.mqtt_client.message_callback_add(sub_topic, message_callback)
-        self.topic_dict[sub_topic] = {
-            "matches": [], "sockets": [], "dynamic": dynamic}
-
-        self.mqtt_client.subscribe(sub_topic)
+                            self.socket_write_message, socket=socket, message={"topic": message.topic, "payload": message.payload.decode('utf-8')})
+        if sub_topic not in self.topic_dict:
+            self.mqtt_client.message_callback_add(sub_topic, message_callback)
+            self.topic_dict[sub_topic] = {
+                "matches": [], "sockets": [], "dynamic": dynamic}
+            self.mqtt_client.subscribe(sub_topic)
 
     def on_mqtt_connect(self, client, userdata, flags, rc):
         logger.info("mqtt connected to broker %s:%s" %
