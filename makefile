@@ -6,11 +6,11 @@ init:
 	echo "To enter env, run:"
 	echo "source env/bin/activate"
 
-flake:
-	flake8 mqtt-to-clientstream-bridge
-
 test:
 	pytest tests
+
+image:
+	docker build -t mqtt-bridge -f mqtt-to-clientstrean.dockerfile .
 
 clean:
 	rm -rf `find . -name __pycache__`
@@ -28,4 +28,4 @@ clean:
 	rm -rf dist
 	rm -rf *.egg-info
 
-.PHONY: init flake clean test
+.PHONY: init image clean test

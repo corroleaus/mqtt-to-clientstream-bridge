@@ -7,8 +7,8 @@ import time
 import sys
 from pathlib import Path
 import argparse
-from bridge import Bridge
-from exceptions import ConfigException
+from mqtt_to_clientstream.bridge import Bridge
+from mqtt_to_clientstream.exceptions import ConfigException
 daiquiri.setup(level=logging.INFO)
 
 logger = daiquiri.getLogger(__name__)
