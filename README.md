@@ -11,7 +11,7 @@ MQTT to ClientStream(websocket/sse) Bridge
 │   ├── sse.html
 │   └── websocket.html
 ├── makefile
-├── mqtt-to-clientstream.dockerfile
+├── mqtt_to_clientstream.dockerfile
 ├── mqtt_to_clientstream
 │   ├── __init__.py
 │   ├── app.py
