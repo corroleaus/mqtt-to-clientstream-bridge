@@ -70,6 +70,7 @@ optional arguments:
 ```docker run -it corroleaus/mqtt-to-clientstream-bridge --help```
 
 - run example config
+
 ```docker run -it -v $(pwd)/config:/srv/config corroleaus/mqtt-to-clientstream-bridge -c /srv/config/config.example.yaml```
 
 
