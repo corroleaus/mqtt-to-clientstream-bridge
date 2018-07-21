@@ -2,6 +2,26 @@
 
 MQTT to ClientStream(websocket/sse) Bridge
 
+```
+├── README.md
+├── config
+│   ├── config.example.yaml
+│   └── config.yaml.bak
+├── examples
+│   ├── sse.html
+│   └── websocket.html
+├── makefile
+├── mqtt-to-clientstream.dockerfile
+├── mqtt_to_clientstream
+│   ├── __init__.py
+│   ├── app.py
+│   ├── bridge.py
+│   ├── exceptions.py
+│   ├── sse_handler.py
+│   ├── utils.py
+│   └── websocket_handler.py
+└── setup.py
+```
 
 ## Why
 
