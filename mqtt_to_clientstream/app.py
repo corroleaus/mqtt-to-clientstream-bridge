@@ -58,7 +58,6 @@ class App(object):
         logger.info('Stopping ioloop.')
         self.ioloop.stop()
         self.ioloop.close()
-        self.bridge.get_app().stop()
         sys.exit(0)
 
     def sig_handler(self, sig, frame):

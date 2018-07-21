@@ -10,7 +10,7 @@ test:
 	pytest tests
 
 image:
-	docker build -t mqtt-bridge -f mqtt-to-clientstrean.dockerfile .
+	docker build -t corroleaus/mqtt-to-clientstream-bridge -f mqtt_to_clientstream.dockerfile .
 
 clean:
 	rm -rf `find . -name __pycache__`

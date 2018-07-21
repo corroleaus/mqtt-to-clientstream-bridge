@@ -3,12 +3,12 @@ LABEL maintainer="pontus.pohl@gmail.com"
 
 WORKDIR /srv
 
-COPY . .
-
 RUN apk update && \
 apk --no-cache add ca-certificates \
 py-yaml py3-paho-mqtt py3-tornado \
 && rm -rf /var/cache/apk/
+
+COPY . .
 
 ENV PYTHONPATH="${PYTHONPATH}:/usr/lib/python3.6/site-packages/"
 
